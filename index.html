@@ -17,14 +17,15 @@
 </head>
 <body>
 <div class="app">
-<header class="top"><div class="brand"><h1>Grocery Shopping Assistant</h1><p>Build your list, choose local stores, and create a research-ready ChatGPT shopping prompt.</p></div><div class="version">v3.2.1 Mobile</div></header>
+<header class="top"><div class="brand"><h1>Grocery Shopping Assistant</h1><p>Build your list, choose local stores, and create a research-ready ChatGPT shopping prompt.</p></div><div class="version">v3.2.2 Mobile</div></header>
 
 <section class="card">
 <div class="head"><div><div class="title">My Grocery Library</div><div class="note">Tap an item to add or remove it from today's list.</div></div><div class="count"><span id="libraryCount">0</span> saved</div></div>
 <div class="search"><input id="librarySearch" placeholder="Search saved items…" autocomplete="off"></div>
 <div id="library" class="library"></div>
 <div class="actions"><button class="secondary" id="selectAll">Select All</button><button class="secondary" id="clearAll">Clear All</button></div>
-<div class="hint">Your grocery library, current list, and shopping preferences are stored locally on this iPhone. Nothing is sent to a server by this app. Older v2.1/v2.2 library keys are migrated automatically.</div>
+<div class="actions"><button class="secondary" id="backup">Backup My Data</button><button class="secondary" id="restore">Restore Backup</button><input id="restoreFile" type="file" accept="application/json" style="display:none"></div>
+<div class="hint">Your grocery library, current list, and shopping preferences are stored locally on this iPhone. Nothing is sent to a server by this app. Older v2.1/v2.2 library keys are migrated automatically. Use Backup/Restore below to protect your data when changing phones or clearing Safari data.</div>
 </section>
 
 <section class="card">
@@ -95,10 +96,14 @@ function generatePrompt(){current=unique($('prompt').value && false?current:curr
 async function copyPrompt(){const p=$('prompt').value||generatePrompt();if(!p)return;try{await navigator.clipboard.writeText(p);status('Prompt copied. Open ChatGPT and paste it into a new chat.','good')}catch(e){$('prompt').focus();$('prompt').select();status('Prompt is ready and selected. Tap Copy on the iPhone keyboard/menu.','good')}}
 async function sharePrompt(){const p=$('prompt').value||generatePrompt();if(!p)return;if(navigator.share){try{await navigator.share({title:'Grocery Shopping Prompt',text:p})}catch(e){}}else{copyPrompt()}}
 function openChatGPT(){window.open('https://chatgpt.com/','_blank','noopener');status('ChatGPT opened. Paste the generated prompt into the chat.','good')}
+function buildBackup(){const data={app:'Grocery Shopping Assistant',version:'3.2.2',createdAt:new Date().toISOString(),library:getSaved(),state:{current:[...current],location:$('location').value,maxStores:$('maxStores').value,weekly:$('weekly').checked,unit:$('unit').checked,availability:$('availability').checked,loyalty:$('loyalty').checked,substitutes:$('substitutes').checked,strategy:$('strategy').value,notes:$('notes').value,stores:selectedStores()}};return JSON.stringify(data,null,2)}
+function backupData(){const blob=new Blob([buildBackup()],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='grocery-assistant-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);status('Backup file created. Keep it somewhere safe, such as iCloud Drive.','good')}
+function restoreData(file){const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||!Array.isArray(d.library)||!d.state)throw new Error('Invalid backup');setSaved(d.library);current=unique(Array.isArray(d.state.current)?d.state.current:[]);savedState=d.state;restoreState();renderStores();sync();status('Backup restored successfully. Your grocery library and preferences are back on this iPhone.','good')}catch(e){status('That file is not a valid Grocery Shopping Assistant backup.','bad')}};r.readAsText(file)}
 function saveList(){const before=getSaved().length;setSaved(getSaved().concat(current));renderLibrary();status((getSaved().length-before)+' new item'+(getSaved().length-before===1?'':'s')+' saved to your library.','good')}
 function clearList(){current=[];sync();status('Today’s list cleared. Your library was not changed.','good')}
 function loadExample(){current=unique(EXAMPLE.split('\n'));sync();status('Example list loaded.','good')}
 $('librarySearch').addEventListener('input',renderLibrary);$('addItem').addEventListener('click',addItem);$('newItem').addEventListener('keydown',e=>{if(e.key==='Enter')addItem()});$('saveLibrary').addEventListener('click',saveList);$('clearList').addEventListener('click',clearList);$('example').addEventListener('click',loadExample);$('selectAll').addEventListener('click',()=>{current=unique(current.concat(getSaved()));sync();status('All saved items added to today’s list.','good')});$('clearAll').addEventListener('click',()=>{const saved=getSaved();current=current.filter(x=>!saved.some(y=>norm(y)===norm(x)));sync();status('Saved library items removed from today’s list.','good')});$('generate').addEventListener('click',generatePrompt);$('quickGenerate').addEventListener('click',()=>{generatePrompt();window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'})});$('copy').addEventListener('click',copyPrompt);$('share').addEventListener('click',sharePrompt);$('open').addEventListener('click',openChatGPT);
+$('backup').addEventListener('click',backupData);$('restore').addEventListener('click',()=>$('restoreFile').click());$('restoreFile').addEventListener('change',e=>{if(e.target.files&&e.target.files[0])restoreData(e.target.files[0]);e.target.value=''});
 loadState();renderStores();restoreState();sync();
 ['location','maxStores','weekly','unit','availability','loyalty','substitutes','strategy','notes'].forEach(id=>$(id).addEventListener('input',persistState));
 ['weekly','unit','availability','loyalty','substitutes','strategy'].forEach(id=>$(id).addEventListener('change',persistState));

@@ -1,4 +1,4 @@
-# Grocery Shopping Assistant v3.2.1
+# Grocery Shopping Assistant v3.2.2
 
 Mobile-first Progressive Web App (PWA) for building a grocery shopping list and generating a research-ready ChatGPT prompt.
 
@@ -38,3 +38,7 @@ When a newer version is published to the same GitHub Pages site, the service wor
 ## No SerpApi
 
 SerpApi is not used or required. ChatGPT performs the current web research after the generated prompt is supplied to ChatGPT.
+
+
+## Data safety
+Shopping lists, grocery library, and preferences are stored locally in the browser on the device. v3.2.2 adds **Backup My Data** and **Restore Backup** so you can save a JSON backup before clearing Safari data or moving to another device.
